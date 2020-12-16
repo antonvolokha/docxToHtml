@@ -1,0 +1,1 @@
+QT_MAC_WANTS_LAYER=1 pyinstaller --name="DocxHtml" --windowed --onefile main.py
