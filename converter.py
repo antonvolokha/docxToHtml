@@ -1,11 +1,11 @@
 import zipfile
-from PIL import Image
 import math
 import os
 import shutil
 import mammoth
 import argparse
 
+from PIL import Image
 from os import listdir
 from os.path import isfile, join
 from queue import Queue
