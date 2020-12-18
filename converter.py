@@ -4,6 +4,7 @@ import os
 import shutil
 import mammoth
 import argparse
+from tempfile import gettempdir
 
 from PIL import Image
 from os import listdir
@@ -18,7 +19,7 @@ class Converter:
 
   def __init__(self):
     self.prefix = str(uuid4())
-    self.tmpPath = 'tmp' + str(uuid4())
+    self.tmpPath = gettempdir() + '/tmp' + str(uuid4())
     self.imgPath = '%s/word/media' % (self.tmpPath)
 
   def zipdir(self, path, ziph):
@@ -57,13 +58,13 @@ class Converter:
 
       filepath = '/'.join(filepath)
 
-      q = Queue()
+      if os.path.exists(self.imgPath):
+        q = Queue()
+        for image in [f for f in listdir(self.imgPath) if isfile(join(self.imgPath, f))]:
+          q.put(join(self.imgPath, image))
 
-      for image in [f for f in listdir(self.imgPath) if isfile(join(self.imgPath, f))]:
-        q.put(join(self.imgPath, image))
-
-      self.compressThreding(q)
-      q.join()
+        self.compressThreding(q)
+        q.join()
 
       zipf = zipfile.ZipFile(filepath, 'w', zipfile.ZIP_DEFLATED)
       self.zipdir(self.tmpPath, zipf)
@@ -95,7 +96,7 @@ class Converter:
     html = html.replace('<p>Рис', '<p class="center">Рис')
 
     html = """
-      <html><head><style type="text/css">
+      <html><head><meta charset="utf-8"/><style type="text/css">
         @page { size: 21cm 29.7cm; margin: 2cm; }
         p {
           background: transparent;
