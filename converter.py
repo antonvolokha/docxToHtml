@@ -22,6 +22,16 @@ class Converter:
     self.tmpPath = gettempdir() + '/tmp' + str(uuid4())
     self.imgPath = '%s/word/media' % (self.tmpPath)
 
+  def run(self, filepath: str):
+    # Not workign on windows
+    compress = os.name != 'nt'
+    if compress:
+      filepath = self.compressFile(filepath)
+
+    self.convertToHtml(filepath, remove=compress)
+
+
+
   def zipdir(self, path, ziph):
     for root, dirs, files in os.walk(path):
       for file in files:
@@ -30,7 +40,7 @@ class Converter:
 
         ziph.write(src, dst)
 
-  def compress(self, q: Queue):
+  def compressTask(self, q: Queue):
     while not q.empty():
       path = q.get()
       img = Image.open(path)
@@ -42,12 +52,12 @@ class Converter:
       img.save(path, quality=self.imageQuality)
       q.task_done()
 
-  def compressThreding(self, q: Queue, threadCount=5):
+  def compressThreds(self, q: Queue, threadCount=5):
     for i in range(threadCount):
-      thread = Thread(target=self.compress, name=str(i), args=(q,))
+      thread = Thread(target=self.compressTask, name=str(i), args=(q,))
       thread.start()
 
-  def processFile(self, filepath: str) -> bool:
+  def compressFile(self, filepath: str) -> str:
     try:
       with zipfile.ZipFile(filepath, 'r') as zip_ref:
         zip_ref.extractall(self.tmpPath)
@@ -63,7 +73,7 @@ class Converter:
         for image in [f for f in listdir(self.imgPath) if isfile(join(self.imgPath, f))]:
           q.put(join(self.imgPath, image))
 
-        self.compressThreding(q)
+        self.compressThreds(q)
         q.join()
 
       zipf = zipfile.ZipFile(filepath, 'w', zipfile.ZIP_DEFLATED)
@@ -71,14 +81,13 @@ class Converter:
       zipf.close()
 
       shutil.rmtree(self.tmpPath)
-      self.convertToHtml(filepath)
 
-      return True
+      return filepath
     except Exception as ex:
       print('Exception %s' % (ex))
-      return False
+      return None
 
-  def convertToHtml(self, filepath: str):
+  def convertToHtml(self, filepath: str, remove=True):
     html = ''
     with open(filepath, "rb") as docx_file:
       result = mammoth.convert_to_html(docx_file)
@@ -136,4 +145,5 @@ class Converter:
     with open(filepath, 'w+', encoding='utf-8') as html_file:
       html_file.write(html)
 
-    os.remove(oldfilepath)
+    if remove:
+      os.remove(oldfilepath)

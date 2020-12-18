@@ -55,7 +55,7 @@ def run(q: Queue):
   while not q.empty():
     file = q.get()
     converter = Converter()
-    converter.processFile(file)
+    converter.run(file)
 
     q.task_done()
 
